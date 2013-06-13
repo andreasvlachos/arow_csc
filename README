@@ -1,0 +1,13 @@
+Cost-sensitive multiclass classification with Adaptive Regularization of Weights
+
+This is a simple and efficient implementation of the Adaptive Regularization of Weights (AROW) algorithm for classification (http://books.nips.cc/papers/files/nips22/NIPS2009_0611.pdf). It is in python and it relies on the very efficient sparse vector implementation by Liang Huang (http://acl.cs.qc.edu/~lhuang/software/hvector-1.0.tar.bz) which must be downloaded separately. While it is not as efficient as other implementations in C++ such as arowpp (http://code.google.com/p/arowpp/), it offers the following:
+
+    multiclass classification
+    cost-sensitive classification
+    probability estimates
+
+In order to run it and see how the API is used, please download a version of the 20 newsgroups dataset available here: http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#news20.binary and run (remember to install Liang Huang's sparse vector package first):
+
+python arow.py news20.binary
+
+For any questions or bugs please contact Andreas Vlachos (http://www.cl.cam.ac.uk/~av308/). If you find this software useful please acknowledge it using the link to this project. Thanks!
