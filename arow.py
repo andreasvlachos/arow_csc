@@ -111,7 +111,8 @@ class AROW():
 
         if verbose:
             for feature in instance.featureVector:
-                prediction.featureValuesWeights.append([feature, instance.featureVector[feature], self.currentWeightVector[feature]])
+                # keep the feature weights for the predicted label
+                prediction.featureValueWeights.append([feature, instance.featureVector[feature], self.currentWeightVectors[prediction.label][feature]])
         if probabilities:
             # if we have probabilistic training
             if self.probabilities:
