@@ -13,6 +13,26 @@ import numpy
 # the instances consist of a dictionary of labels to costs and feature vectors (Huang-style)
 
 class Instance:
+    
+    @staticmethod
+    def removeHapaxLegomena(instances):
+        print "Counting features"
+        feature2counts = mydefaultdict(mydouble)
+        for instance in instances:
+            for element in instance.featureVector:
+                feature2counts[element] += 1
+
+        print "Removing hapax legomena"
+        newInstances = []
+        for instance in instances:
+            newFeatureVector = mydefaultdict(mydouble)
+            for element in instance.featureVector:
+                # if this feature was encountered more than once
+                if feature2counts[element] > 1:
+                    newFeatureVector[element] = instance.featureVector[element]
+            newInstances.append(Instance(newFeatureVector, instance.costs))
+        return newInstances
+    
 
     def __init__(self, featureVector, costs=None):
         self.featureVector = featureVector
@@ -57,7 +77,6 @@ class Instance:
         retString += " ".join(features)
 
         return retString
-
 
 class Prediction:
 
@@ -205,16 +224,13 @@ class AROW():
             costInRound = 0
             # for each instance
             for instance in instances:
-		#print featureVectors[index]
                 prediction = self.predict(instance)
-                #print prediction.label2score
 
                 # so if the prediction was incorrect
                 # we are no longer large margin, since we are using the loss from the cost-sensitive PA
                 if instance.costs[prediction.label] > 0:
                     errorsInRound += 1
                     costInRound += instance.costs[prediction.label]
-                    #print "Wrong label predicted " + prediction.label + " " + str(prediction.score)
 
                     # first we need to get the score for the correct answer
                     # if the instance has more than one correct answer then pick the min
@@ -225,14 +241,10 @@ class AROW():
                         if score < minCorrectLabelScore:
                             minCorrectLabelScore = score
                             minCorrectLabel = label
-
-                    #print "Correct label with minimum score was " + minCorrectLabel + " " +str(minCorrectLabelScore)
                         
                     # Calculate the confidence values
-
                     # first for the predicted label 
                     zVectorPredicted = mydefaultdict(mydouble)
-
                     zVectorMinCorrect = mydefaultdict(mydouble)
                     for feature in instance.featureVector:
                         # the variance is either some value that is in the dict or just 1
@@ -246,12 +258,9 @@ class AROW():
                         else:
                             zVectorMinCorrect[feature] = instance.featureVector[feature]
                      
-                    #print zVectorPredicted.dot(instance.featureVector)
-                    #print zVectorMinCorrect.dot(instance.featureVector)
                     confidence = zVectorPredicted.dot(instance.featureVector) + zVectorMinCorrect.dot(instance.featureVector)
-                    #print confidence
+
                     beta = 1.0/(confidence + param)
-                    #print beta
 
                     # the loss is the scaled margin loss also used by Mejer and Crammer 2010
                     loss = prediction.score - minCorrectLabelScore  + math.sqrt(instance.costs[prediction.label])
@@ -262,7 +271,6 @@ class AROW():
                     self.currentWeightVectors[prediction.label].iaddc(zVectorPredicted, -alpha)
                     self.currentWeightVectors[minCorrectLabel].iaddc(zVectorMinCorrect, alpha)
                     if averaging:
-                        #print updatesLeft
                         averagedWeightVectors[prediction.label].iaddc(zVectorPredicted, -alpha * updatesLeft)
                         averagedWeightVectors[minCorrectLabel].iaddc(zVectorMinCorrect, alpha * updatesLeft)
                     
