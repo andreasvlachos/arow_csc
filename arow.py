@@ -4,6 +4,7 @@ from _mycollections import mydefaultdict
 from mydouble import mydouble, counts
 import cPickle as pickle
 import gzip
+from operator import itemgetter
 
 import random
 import math
@@ -113,6 +114,8 @@ class AROW():
             for feature in instance.featureVector:
                 # keep the feature weights for the predicted label
                 prediction.featureValueWeights.append([feature, instance.featureVector[feature], self.currentWeightVectors[prediction.label][feature]])
+            # order them from the most positive to the most negative
+                prediction.featureValueWeights = sorted(prediction.featureValueWeights, key=itemgetter(2))
         if probabilities:
             # if we have probabilistic training
             if self.probabilities:
