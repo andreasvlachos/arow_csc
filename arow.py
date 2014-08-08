@@ -496,14 +496,15 @@ if __name__ == "__main__":
     print "training data: " + str(len(trainingInstances)) + " instances"
     #classifier_p.train(trainingInstances, True, True, 10, 10)
     
-    classifier_p = AROW.trainOpt(trainingInstances, 10, [0.01, 0.1, 1.0, 10, 100], 0.1, True)
+    # the last parameter can be set to True if probabilities are needed.
+    classifier_p = AROW.trainOpt(trainingInstances, 10, [0.01, 0.1, 1.0, 10, 100], 0.1, False)
 
     cost = classifier_p.batchPredict(testingInstances)
     avgCost = float(cost)/len(testingInstances)
     print "Avg Cost per instance " + str(avgCost) + " on " + str(len(testingInstances)) + " testing instances"
 
-    avgRatio = classifier_p.batchPredict(testingInstances, True)
-    print "entropy sums: " + str(avgRatio)
+    #avgRatio = classifier_p.batchPredict(testingInstances, True)
+    #print "entropy sums: " + str(avgRatio)
 
     # Save the parameters:
     #print "saving"
