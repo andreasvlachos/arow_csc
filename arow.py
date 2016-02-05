@@ -291,7 +291,7 @@ class AROW(object):
                 else:
                     zVectorMinCorrect[feature] = instance.featureVector[feature]
             confidence = zVectorPredicted.dot(instance.featureVector) + zVectorMinCorrect.dot(instance.featureVector)
-            beta = 1.0/(confidence + param)
+            beta = 1.0 / (confidence + param)
             alpha = loss * beta
 
             # update the current weight vectors
@@ -302,8 +302,8 @@ class AROW(object):
                 averagedWeightVectors[minCorrectLabel].iaddc(zVectorMinCorrect, alpha * updatesLeft)
         else:
             # the squared norm is twice the square of the features since they are the same per class 
-            norm = 2*(instance.featureVector.dot(instance.featureVector))
-            factor = loss/(norm + float(1)/(2*param))
+            norm = 2 * (instance.featureVector.dot(instance.featureVector))
+            factor = loss / (norm + 1.0 / (2 * param))
             self.currentWeightVectors[prediction.label].iaddc(instance.featureVector, -factor)
             self.currentWeightVectors[minCorrectLabel].iaddc(instance.featureVector, factor)
             if averaging:
@@ -314,16 +314,16 @@ class AROW(object):
             for feature in instance.featureVector.iterkeys():
                 # for the predicted
                 if feature in self.currentVarianceVectors[prediction.label]:
-                    self.currentVarianceVectors[prediction.label][feature] -= beta * pow(zVectorPredicted[feature],2)
+                    self.currentVarianceVectors[prediction.label][feature] -= beta * pow(zVectorPredicted[feature], 2)
                 else:
                     # Never updated this covariance before, add 1
-                    self.currentVarianceVectors[prediction.label][feature] = 1 - beta * pow(zVectorPredicted[feature],2)
+                    self.currentVarianceVectors[prediction.label][feature] = 1 - beta * pow(zVectorPredicted[feature], 2)
                 # for the minCorrect
                 if feature in self.currentVarianceVectors[minCorrectLabel]:
-                    self.currentVarianceVectors[minCorrectLabel][feature] -= beta * pow(zVectorMinCorrect[feature],2)
+                    self.currentVarianceVectors[minCorrectLabel][feature] -= beta * pow(zVectorMinCorrect[feature], 2)
                 else:
                     # Never updated this covariance before, add 1
-                    self.currentVarianceVectors[minCorrectLabel][feature] = 1 - beta * pow(zVectorMinCorrect[feature],2)
+                    self.currentVarianceVectors[minCorrectLabel][feature] = 1 - beta * pow(zVectorMinCorrect[feature], 2)
 
 
     def train(self, instances, averaging=True, shuffling=True, rounds=10, param=1, adapt=True):
@@ -353,7 +353,7 @@ class AROW(object):
                                             averagedWeightVectors, updatesLeft)
                 if averaging:
                     updatesLeft-=1
-            print "Training error rate in round " + str(r) + " : " + str(float(errorsInRound)/len(instances))
+            print "Training error rate in round " + str(r) + " : " + str(float(errorsInRound) / len(instances))
 	    
         if averaging:
             for label in self.currentWeightVectors:
