@@ -3,7 +3,7 @@ import unittest
 
 class InstanceTests(unittest.TestCase):
 
-    def testInstance1(self):
+    def test_instance_1(self):
         data = "-1 1:0.1 2:0.5 9:0.1"
         inst = arow.instance_from_svm_input(data)
         #print inst
@@ -11,7 +11,7 @@ class InstanceTests(unittest.TestCase):
 
 class AROWTests(unittest.TestCase):
 
-    def testAROW1(self):
+    def test_arow_1(self):
         dataset = ["-1 1:0.1 2:0.5 9:0.1",
                    "+1 1:0.6 2:0.2 8:0.2",
                    "-1 1:0.1 2:0.6 8:0.3",

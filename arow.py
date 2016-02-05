@@ -235,19 +235,17 @@ class AROW(object):
         else:
             return totalCost
 
-    # the parameter here is for AROW learning
-    # adapt if True is AROW, if False it is passive aggressive-II with prediction-based updates 
-    def train(self, instances, averaging=True, shuffling=True, rounds=10, param=1, adapt=True):
-        # we first need to go through the dataset to find how many classes
-
-        # Initialize the weight vectors in the beginning of training"
-        # we have one variance and one weight vector per class
+    def _initialize_vectors(self, instances, averaging, rounds, adapt):
+        """
+        Initialize the weight vectors in the beginning of training.
+        We have one variance and one weight vector per class.
+        """
         self.currentWeightVectors = {} 
         if adapt:
             self.currentVarianceVectors = {}
         if averaging:
             averagedWeightVectors = {}
-            updatesLeft = rounds*len(instances)
+            updatesLeft = rounds * len(instances)
         for label in instances[0].costs:
             self.currentWeightVectors[label] = mydefaultdict(mydouble)
             # remember: this is sparse in the sense that everething that doesn't have a value is 1
@@ -257,6 +255,18 @@ class AROW(object):
             # keep the averaged weight vector
             if averaging:
                 averagedWeightVectors[label] = mydefaultdict(mydouble)
+        return averagedWeightVectors, updatesLeft
+
+    def train(self, instances, averaging=True, shuffling=True, rounds=10, param=1, adapt=True):
+        """
+        Train the classifier. If adapt is False then we have PA-II with
+        prediction-based updates. If adapt is True then we have AROW.
+        The param value is only used in AROW, not in PA-II.
+        """
+        # This is a bit nasty, averagedWeightVectors will be None if
+        # averaging is False. Setting it as an instance attribute
+        # might be better.
+        averagedWeightVectors, updatesLeft = self._initialize_vectors(instances, averaging, rounds, adapt)
 
         # in each iteration        
         for r in range(rounds):
