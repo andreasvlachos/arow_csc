@@ -136,50 +136,16 @@ class AROW(object):
             if score > prediction.score:
                 prediction.score = score
                 prediction.label = label
-
         if verbose:
             self._add_info(instance, prediction)
-
         if probabilities:
             # if we have probabilistic training
-            if self.probabilities:
-                probPredictions ={}
-                for label in self.probWeightVectors[0].keys():
-                    # smoothing the probabilities with add 0.01 of 1 out of the vectors
-                    probPredictions[label] = 0.01/len(self.probWeightVectors)
-                # for each of the weight vectors obtained get its prediction
-                for probWeightVector in self.probWeightVectors:
-                    maxScore = float("-inf")
-                    maxLabel = None
-                    for label, weightVector in probWeightVector.items():
-                        score = instance.featureVector.dot(weightVector)
-                        if score > maxScore:
-                            maxScore = score
-                            maxLabel = label
-                    # so the winning label adds one vote
-                    probPredictions[maxLabel] += 1
-
-                # now let's normalize:
-                for label, score in probPredictions.items():
-                    prediction.label2prob[label] = float(score)/len(self.probWeightVectors)
-
-                # Also compute the entropy:
-                for prob in prediction.label2prob.values():
-                    if prob > 0:
-                        prediction.entropy -= prob * math.log(prob, 2)
-                # normalize it:
-                prediction.entropy /= math.log(len(prediction.label2prob),2)
-                #print prediction.label2prob
-                #print prediction.entropy
-            else:
-                print "Need to obtain weight samples for probability estimates first"
-
+            self._calc_probs(instance, prediction)
         return prediction
-
 
     def _add_info(self, instance, prediction):
         """
-        Add verbosity info to the prediction
+        Add verbosity info to the prediction.
         """
         for feature in instance.featureVector:
             # keep the feature weights for the predicted label
@@ -187,10 +153,45 @@ class AROW(object):
             # order them from the most positive to the most negative
             prediction.featureValueWeights = sorted(prediction.featureValueWeights, key=itemgetter(2))
 
+    def _calc_probs(self, instance, prediction):
+        """
+        Add probability info to the prediction.
+        """
+        if self.probabilities:
+            probPredictions ={}
+            for label in self.probWeightVectors[0].keys():
+                # smoothing the probabilities with add 0.01 of 1 out of the vectors
+                probPredictions[label] = 0.01/len(self.probWeightVectors)
+            # for each of the weight vectors obtained get its prediction
+            for probWeightVector in self.probWeightVectors:
+                maxScore = float("-inf")
+                maxLabel = None
+                for label, weightVector in probWeightVector.items():
+                    score = instance.featureVector.dot(weightVector)
+                    if score > maxScore:
+                        maxScore = score
+                        maxLabel = label
+                # so the winning label adds one vote
+                probPredictions[maxLabel] += 1
 
-    # This is just used to optimize the params
-    # if probabilities is True we return the ratio for the average entropies, otherwise the loss
+            # now let's normalize:
+            for label, score in probPredictions.items():
+                prediction.label2prob[label] = float(score)/len(self.probWeightVectors)
+
+            # Also compute the entropy:
+            for prob in prediction.label2prob.values():
+                if prob > 0:
+                    prediction.entropy -= prob * math.log(prob, 2)
+            # normalize it:
+            prediction.entropy /= math.log(len(prediction.label2prob),2)
+        else:
+            print "Need to obtain weight samples for probability estimates first"
+
     def batchPredict(self, instances, probabilities=False):
+        """
+        This is just used to optimize the params
+        if probabilities is True we return the ratio for the average entropies, otherwise the loss
+        """
         totalCost = 0
         sumCorrectEntropies = 0
         sumIncorrectEntropies = 0
@@ -218,8 +219,7 @@ class AROW(object):
                     #    sumLogProbCorrect = float("inf")
                     totalIncorrects += instance.maxCost
                     sumEntropies += instance.maxCost*(1-prediction.entropy)
-                    sumIncorrectEntropies += instance.maxCost*prediction.entropy
-                    
+                    sumIncorrectEntropies += instance.maxCost*prediction.entropy                    
             else:
                 # no probs, just keep track of the cost incurred
                 if instance.costs[prediction.label] > 0:
@@ -237,7 +237,7 @@ class AROW(object):
 
     # the parameter here is for AROW learning
     # adapt if True is AROW, if False it is passive aggressive-II with prediction-based updates 
-    def train(self, instances, averaging=True, shuffling=True, rounds = 10, param = 1, adapt=True):
+    def train(self, instances, averaging=True, shuffling=True, rounds=10, param=1, adapt=True):
         # we first need to go through the dataset to find how many classes
 
         # Initialize the weight vectors in the beginning of training"
