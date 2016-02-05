@@ -115,7 +115,8 @@ class Prediction(object):
 
 class AROW(object):
     """
-    An AROW classifier.
+    An AROW classifier. It has one weight vector for each label in
+    the dataset.
     """
 
     def __init__(self):
@@ -123,13 +124,12 @@ class AROW(object):
         self.currentWeightVectors = {}
         self.currentVarianceVectors = {}
 
-    # This predicts always using the current weight vectors
     def predict(self, instance, verbose=False, probabilities=False):
-        # always add the bias
-        instance.featureVector["biasAutoAdded"] = 1.0
-
+        """
+        Predict the label for an instance using the current weight vector.
+        """
+        instance.featureVector["biasAutoAdded"] = 1.0 # Always add bias
         prediction = Prediction()
-        
         for label, weightVector in self.currentWeightVectors.items():
             score = instance.featureVector.dot(weightVector)
             prediction.label2score[label] = score
@@ -138,11 +138,8 @@ class AROW(object):
                 prediction.label = label
 
         if verbose:
-            for feature in instance.featureVector:
-                # keep the feature weights for the predicted label
-                prediction.featureValueWeights.append([feature, instance.featureVector[feature], self.currentWeightVectors[prediction.label][feature]])
-            # order them from the most positive to the most negative
-                prediction.featureValueWeights = sorted(prediction.featureValueWeights, key=itemgetter(2))
+            self._add_info(instance, prediction)
+
         if probabilities:
             # if we have probabilistic training
             if self.probabilities:
@@ -178,6 +175,18 @@ class AROW(object):
                 print "Need to obtain weight samples for probability estimates first"
 
         return prediction
+
+
+    def _add_info(self, instance, prediction):
+        """
+        Add verbosity info to the prediction
+        """
+        for feature in instance.featureVector:
+            # keep the feature weights for the predicted label
+            prediction.featureValueWeights.append([feature, instance.featureVector[feature], self.currentWeightVectors[prediction.label][feature]])
+            # order them from the most positive to the most negative
+            prediction.featureValueWeights = sorted(prediction.featureValueWeights, key=itemgetter(2))
+
 
     # This is just used to optimize the params
     # if probabilities is True we return the ratio for the average entropies, otherwise the loss

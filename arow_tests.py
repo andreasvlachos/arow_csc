@@ -19,9 +19,13 @@ class AROWTests(unittest.TestCase):
                ]
         data = [arow.instance_from_svm_input(d) for d in dataset]
         cl = arow.AROW()
+        print [cl.predict(d).label for d in data]
+        print [d.costs for d in data]
+
         cl.train(data)
         
-        print [cl.predict(d).label for d in data]
+        print [cl.predict(d, verbose=True).label for d in data]
+        print [cl.predict(d, verbose=True).featureValueWeights for d in data]
         print [d.costs for d in data]
         
             
