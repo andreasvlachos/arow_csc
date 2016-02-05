@@ -13,34 +13,18 @@ import numpy
 # cost-sensitive multiclass classification with AROW
 # the instances consist of a dictionary of labels to costs and feature vectors (Huang-style)
 
-class Instance:
-    
-    @staticmethod
-    def removeHapaxLegomena(instances):
-        print "Counting features"
-        feature2counts = mydefaultdict(mydouble)
-        for instance in instances:
-            for element in instance.featureVector:
-                feature2counts[element] += 1
-        print len(feature2counts)
-
-        print "Removing hapax legomena"
-        newInstances = []
-        for instance in instances:
-            newFeatureVector = mydefaultdict(mydouble)
-            for element in instance.featureVector:
-                # if this feature was encountered more than once
-                if feature2counts[element] > 1:
-                    newFeatureVector[element] = instance.featureVector[element]
-            newInstances.append(Instance(newFeatureVector, instance.costs))
-        return newInstances
-    
+class Instance(object):
+    """
+    An data instance to be used with AROW. Each instance is composed of a 
+    feature vector (a dict or Huang-style sparse vector) and a dictionary
+    of costs (where the labels should be encoded).
+    """
 
     def __init__(self, featureVector, costs=None):
         self.featureVector = featureVector
+        self.costs = costs
         # we assume that the label with the lowest cost has a cost of zero and the rest increment on that
         # find out which are the correct answer, assuming it has a cost of zero
-        self.costs = costs
         if self.costs != None:
             minCost = float("inf")
             self.maxCost = float("-inf")
@@ -79,6 +63,27 @@ class Instance:
         retString += " ".join(features)
 
         return retString
+
+    @staticmethod
+    def removeHapaxLegomena(instances):
+        print "Counting features"
+        feature2counts = mydefaultdict(mydouble)
+        for instance in instances:
+            for element in instance.featureVector:
+                feature2counts[element] += 1
+        print len(feature2counts)
+
+        print "Removing hapax legomena"
+        newInstances = []
+        for instance in instances:
+            newFeatureVector = mydefaultdict(mydouble)
+            for element in instance.featureVector:
+                # if this feature was encountered more than once
+                if feature2counts[element] > 1:
+                    newFeatureVector[element] = instance.featureVector[element]
+            newInstances.append(Instance(newFeatureVector, instance.costs))
+        return newInstances
+
 
 class Prediction:
 
