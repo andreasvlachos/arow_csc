@@ -23,29 +23,33 @@ class Instance(object):
     def __init__(self, featureVector, costs=None):
         self.featureVector = featureVector
         self.costs = costs
-        # we assume that the label with the lowest cost has a cost of zero and the rest increment on that
-        # find out which are the correct answer, assuming it has a cost of zero
         if self.costs != None:
-            minCost = float("inf")
-            self.maxCost = float("-inf")
-            self.worstLabels = []
-            self.correctLabels = []
-            for label, cost in self.costs.items():
-                if cost < minCost:
-                    minCost = cost
-                    self.correctLabels = [label]
-                elif cost == minCost:
-                    self.correctLabels.append(label)
-                if cost > self.maxCost:
-                    self.maxCost = cost
-                    self.worstLabels = [label]
-                elif cost == self.maxCost:
-                    self.worstLabels.append(label)
+            self._normalize_costs()
 
-            if minCost>0:
-                for label in self.costs:
-                    self.costs[label] -= minCost
-                self.maxCost -= minCost
+    def _normalize_costs(self):
+        """
+        Normalize the costs by setting the lowest one to zero and the rest
+        as increments over zero. 
+        """
+        min_cost = float("inf")
+        self.maxCost = float("-inf")
+        self.worstLabels = []
+        self.correctLabels = []
+        for label, cost in self.costs.items():
+            if cost < min_cost:
+                min_cost = cost
+                self.correctLabels = [label]
+            elif cost == min_cost:
+                self.correctLabels.append(label)
+            if cost > self.maxCost:
+                self.maxCost = cost
+                self.worstLabels = [label]
+            elif cost == self.maxCost:
+                self.worstLabels.append(label)
+        if min_cost > 0:
+            for label in self.costs:
+                self.costs[label] -= min_cost
+            self.maxCost -= min_cost
 
     def __str__(self):
         retString = ""
