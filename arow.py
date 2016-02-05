@@ -52,21 +52,9 @@ class Instance(object):
             self.maxCost -= min_cost
 
     def __str__(self):
-        retString = ""
-        labels = []
-        for label,cost in self.costs.items():
-            labels.append(label+":"+str(cost))
-        retString += ",".join(labels)
-
-        retString += "\t"
-        
-        features = []
-        for feature in self.featureVector:
-            features.append(feature + ":" + str(self.featureVector[feature]))
-        
-        retString += " ".join(features)
-
-        return retString
+        costs_list = [label + ':' + str(self.costs[label]) for label in self.costs]
+        feat_list = [feat + ':' + str(self.featureVector[feat]) for feat in self.featureVector]
+        return ','.join(costs_list) + '\t' + ' '.join(feat_list)
 
     @staticmethod
     def removeHapaxLegomena(instances):
