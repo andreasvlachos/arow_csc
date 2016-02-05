@@ -37,9 +37,9 @@ class Instance(object):
     of costs (where the labels should be encoded).
     """
 
-    def __init__(self, featureVector, costs=None):
+    def __init__(self, feat_vector, costs=None):
         self.featureVector = mydefaultdict(mydouble)
-        for key, val in featureVector.items():
+        for key, val in feat_vector.items():
             self.featureVector[key] = val
         self.costs = costs
         if self.costs != None:
