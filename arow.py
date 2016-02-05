@@ -257,6 +257,77 @@ class AROW(object):
                 averagedWeightVectors[label] = mydefaultdict(mydouble)
         return averagedWeightVectors, updatesLeft
 
+    def _update_parameters(self, instance, prediction, averaging, adapt, param,
+                           errorsInRound, costInRound, averagedWeightVectors,
+                           updatesLeft):
+        errorsInRound += 1
+        costInRound += instance.costs[prediction.label]
+
+        # first we need to get the score for the correct answer
+        # if the instance has more than one correct answer then pick the min
+        minCorrectLabelScore = float("inf")
+        minCorrectLabel = None
+        for label in instance.correctLabels:
+            score = instance.featureVector.dot(self.currentWeightVectors[label])
+            if score < minCorrectLabelScore:
+                minCorrectLabelScore = score
+                minCorrectLabel = label
+
+        # the loss is the scaled margin loss also used by Mejer and Crammer 2010
+        loss = prediction.score - minCorrectLabelScore  + math.sqrt(instance.costs[prediction.label])
+        if adapt:
+            # Calculate the confidence values
+            # first for the predicted label
+            zVectorPredicted = mydefaultdict(mydouble)
+            zVectorMinCorrect = mydefaultdict(mydouble)
+            for feature in instance.featureVector:
+                # the variance is either some value that is in the dict or just 1
+                if feature in self.currentVarianceVectors[prediction.label]:
+                    zVectorPredicted[feature] = instance.featureVector[feature] * self.currentVarianceVectors[prediction.label][feature]
+                else:
+                    zVectorPredicted[feature] = instance.featureVector[feature]
+                # then for the minCorrect:
+                if feature in self.currentVarianceVectors[minCorrectLabel]:
+                    zVectorMinCorrect[feature] = instance.featureVector[feature] * self.currentVarianceVectors[minCorrectLabel][feature]
+                else:
+                    zVectorMinCorrect[feature] = instance.featureVector[feature]
+            confidence = zVectorPredicted.dot(instance.featureVector) + zVectorMinCorrect.dot(instance.featureVector)
+            beta = 1.0/(confidence + param)
+            alpha = loss * beta
+
+            # update the current weight vectors
+            self.currentWeightVectors[prediction.label].iaddc(zVectorPredicted, -alpha)
+            self.currentWeightVectors[minCorrectLabel].iaddc(zVectorMinCorrect, alpha)
+            if averaging:
+                averagedWeightVectors[prediction.label].iaddc(zVectorPredicted, -alpha * updatesLeft)
+                averagedWeightVectors[minCorrectLabel].iaddc(zVectorMinCorrect, alpha * updatesLeft)
+        else:
+            # the squared norm is twice the square of the features since they are the same per class 
+            norm = 2*(instance.featureVector.dot(instance.featureVector))
+            factor = loss/(norm + float(1)/(2*param))
+            self.currentWeightVectors[prediction.label].iaddc(instance.featureVector, -factor)
+            self.currentWeightVectors[minCorrectLabel].iaddc(instance.featureVector, factor)
+            if averaging:
+                averagedWeightVectors[prediction.label].iaddc(instance.featureVector, -factor * updatesLeft)
+                averagedWeightVectors[minCorrectLabel].iaddc(instance.featureVector, factor * updatesLeft)
+        if adapt:
+            # update the diagonal covariance
+            for feature in instance.featureVector.iterkeys():
+                # for the predicted
+                if feature in self.currentVarianceVectors[prediction.label]:
+                    self.currentVarianceVectors[prediction.label][feature] -= beta * pow(zVectorPredicted[feature],2)
+                else:
+                    # Never updated this covariance before, add 1
+                    self.currentVarianceVectors[prediction.label][feature] = 1 - beta * pow(zVectorPredicted[feature],2)
+                # for the minCorrect
+                if feature in self.currentVarianceVectors[minCorrectLabel]:
+                    self.currentVarianceVectors[minCorrectLabel][feature] -= beta * pow(zVectorMinCorrect[feature],2)
+                else:
+                    # Never updated this covariance before, add 1
+                    self.currentVarianceVectors[minCorrectLabel][feature] = 1 - beta * pow(zVectorMinCorrect[feature],2)
+        return errorsInRound
+
+
     def train(self, instances, averaging=True, shuffling=True, rounds=10, param=1, adapt=True):
         """
         Train the classifier. If adapt is False then we have PA-II with
@@ -268,98 +339,21 @@ class AROW(object):
         # might be better.
         averagedWeightVectors, updatesLeft = self._initialize_vectors(instances, averaging, rounds, adapt)
 
-        # in each iteration        
-        for r in range(rounds):
-            # shuffle
+        for r in xrange(rounds):
             if shuffling:
                 random.shuffle(instances)
             errorsInRound = 0
             costInRound = 0
-            # for each instance
             for instance in instances:
                 prediction = self.predict(instance)
-
                 # so if the prediction was incorrect
                 # we are no longer large margin, since we are using the loss from the cost-sensitive PA
                 if instance.costs[prediction.label] > 0:
-                    errorsInRound += 1
-                    costInRound += instance.costs[prediction.label]
-
-                    # first we need to get the score for the correct answer
-                    # if the instance has more than one correct answer then pick the min
-                    minCorrectLabelScore = float("inf")
-                    minCorrectLabel = None
-                    for label in instance.correctLabels:
-                        score = instance.featureVector.dot(self.currentWeightVectors[label])
-                        if score < minCorrectLabelScore:
-                            minCorrectLabelScore = score
-                            minCorrectLabel = label
-                            
-                    # the loss is the scaled margin loss also used by Mejer and Crammer 2010
-                    loss = prediction.score - minCorrectLabelScore  + math.sqrt(instance.costs[prediction.label])
-                        
-                    if adapt:
-                        # Calculate the confidence values
-                        # first for the predicted label
-                        zVectorPredicted = mydefaultdict(mydouble)
-                        zVectorMinCorrect = mydefaultdict(mydouble)
-                        for feature in instance.featureVector:
-                            # the variance is either some value that is in the dict or just 1
-                            if feature in self.currentVarianceVectors[prediction.label]:
-                                zVectorPredicted[feature] = instance.featureVector[feature] * self.currentVarianceVectors[prediction.label][feature]
-                            else:
-                                zVectorPredicted[feature] = instance.featureVector[feature]
-                            # then for the minCorrect:
-                            if feature in self.currentVarianceVectors[minCorrectLabel]:
-                                zVectorMinCorrect[feature] = instance.featureVector[feature] * self.currentVarianceVectors[minCorrectLabel][feature]
-                            else:
-                                zVectorMinCorrect[feature] = instance.featureVector[feature]
-                    
-                        confidence = zVectorPredicted.dot(instance.featureVector) + zVectorMinCorrect.dot(instance.featureVector)
-
-                        beta = 1.0/(confidence + param)
-
-                        alpha = loss * beta
-
-                        # update the current weight vectors
-                        self.currentWeightVectors[prediction.label].iaddc(zVectorPredicted, -alpha)
-                        self.currentWeightVectors[minCorrectLabel].iaddc(zVectorMinCorrect, alpha)
-
-                        if averaging:
-                            averagedWeightVectors[prediction.label].iaddc(zVectorPredicted, -alpha * updatesLeft)
-                            averagedWeightVectors[minCorrectLabel].iaddc(zVectorMinCorrect, alpha * updatesLeft)
-                        
-                    else:
-                        # the squared norm is twice the square of the features since they are the same per class 
-                        norm = 2*(instance.featureVector.dot(instance.featureVector))
-                        factor = loss/(norm + float(1)/(2*param))
-                        self.currentWeightVectors[prediction.label].iaddc(instance.featureVector, -factor)
-                        self.currentWeightVectors[minCorrectLabel].iaddc(instance.featureVector, factor)
-
-                        if averaging:
-                            averagedWeightVectors[prediction.label].iaddc(instance.featureVector, -factor * updatesLeft)
-                            averagedWeightVectors[minCorrectLabel].iaddc(instance.featureVector, factor * updatesLeft)
-                        
-                    
-                    if adapt:
-                        # update the diagonal covariance
-                        for feature in instance.featureVector.iterkeys():
-                            # for the predicted
-			                if feature in self.currentVarianceVectors[prediction.label]:
-			                    self.currentVarianceVectors[prediction.label][feature] -= beta * pow(zVectorPredicted[feature],2)
-			                else:
-			                    # Never updated this covariance before, add 1
-			                    self.currentVarianceVectors[prediction.label][feature] = 1 - beta * pow(zVectorPredicted[feature],2)
-                            # for the minCorrect
-			                if feature in self.currentVarianceVectors[minCorrectLabel]:
-			                    self.currentVarianceVectors[minCorrectLabel][feature] -= beta * pow(zVectorMinCorrect[feature],2)
-			                else:
-			                    # Never updated this covariance before, add 1
-			                    self.currentVarianceVectors[minCorrectLabel][feature] = 1 - beta * pow(zVectorMinCorrect[feature],2)
-
+                    errorsInRound = self._update_parameters(instance, prediction, averaging, adapt, param,
+                                                            errorsInRound, costInRound, 
+                                                            averagedWeightVectors, updatesLeft)
                 if averaging:
-		            updatesLeft-=1
-                
+                    updatesLeft-=1
             print "Training error rate in round " + str(r) + " : " + str(float(errorsInRound)/len(instances))
 	    
         if averaging:
