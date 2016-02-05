@@ -258,11 +258,10 @@ class AROW(object):
         return averagedWeightVectors, updatesLeft
 
     def _update_parameters(self, instance, prediction, averaging, adapt, param,
-                           errorsInRound, costInRound, averagedWeightVectors,
-                           updatesLeft):
-        errorsInRound += 1
-        costInRound += instance.costs[prediction.label]
-
+                           averagedWeightVectors, updatesLeft):
+        """
+        Update the weights and return the total number of errors.
+        """
         # first we need to get the score for the correct answer
         # if the instance has more than one correct answer then pick the min
         minCorrectLabelScore = float("inf")
@@ -325,7 +324,6 @@ class AROW(object):
                 else:
                     # Never updated this covariance before, add 1
                     self.currentVarianceVectors[minCorrectLabel][feature] = 1 - beta * pow(zVectorMinCorrect[feature],2)
-        return errorsInRound
 
 
     def train(self, instances, averaging=True, shuffling=True, rounds=10, param=1, adapt=True):
@@ -349,9 +347,10 @@ class AROW(object):
                 # so if the prediction was incorrect
                 # we are no longer large margin, since we are using the loss from the cost-sensitive PA
                 if instance.costs[prediction.label] > 0:
-                    errorsInRound = self._update_parameters(instance, prediction, averaging, adapt, param,
-                                                            errorsInRound, costInRound, 
-                                                            averagedWeightVectors, updatesLeft)
+                    errorsInRound += 1
+                    costInRound += instance.costs[prediction.label]
+                    self._update_parameters(instance, prediction, averaging, adapt, param,
+                                            averagedWeightVectors, updatesLeft)
                 if averaging:
                     updatesLeft-=1
             print "Training error rate in round " + str(r) + " : " + str(float(errorsInRound)/len(instances))
