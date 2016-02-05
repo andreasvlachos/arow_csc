@@ -10,8 +10,25 @@ import random
 import math
 import numpy
 
-# cost-sensitive multiclass classification with AROW
-# the instances consist of a dictionary of labels to costs and feature vectors (Huang-style)
+
+def instance_from_svm_input(svm_input):
+    """
+    Generate an Instance from a SVMLight input.
+    """
+    feat_vec = mydefaultdict(mydouble)
+    costs = {}
+    splitted = svm_input.split()
+    if splitted[0] == "-1":
+        costs["neg"] = 0
+        costs["pos"] = 1
+    elif splitted[0] == "+1":
+        costs["neg"] = 1
+        costs["pos"] = 0
+    for elem in splitted[1:]:
+        fid, val = elem.split(':')
+        feat_vec[fid] = float(val)
+    return Instance(feat_vec, costs)
+
 
 class Instance(object):
     """
