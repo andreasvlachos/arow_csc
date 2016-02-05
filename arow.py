@@ -21,7 +21,9 @@ class Instance(object):
     """
 
     def __init__(self, featureVector, costs=None):
-        self.featureVector = featureVector
+        self.featureVector = mydefaultdict(mydouble)
+        for key, val in featureVector.items():
+            self.featureVector[key] = val
         self.costs = costs
         if self.costs != None:
             self._normalize_costs()
@@ -58,13 +60,17 @@ class Instance(object):
 
     @staticmethod
     def removeHapaxLegomena(instances):
+        """
+        Hapax Legomena are features that appear only once in the whole
+        dataset. This static method remove these features from the
+        dataset.
+        """
         print "Counting features"
         feature2counts = mydefaultdict(mydouble)
         for instance in instances:
             for element in instance.featureVector:
                 feature2counts[element] += 1
         print len(feature2counts)
-
         print "Removing hapax legomena"
         newInstances = []
         for instance in instances:
@@ -77,8 +83,10 @@ class Instance(object):
         return newInstances
 
 
-class Prediction:
-
+class Prediction(object):
+    """
+    A prediction (?)
+    """
     def __init__(self):
         self.label2score = {}
         self.score = float("-inf")
@@ -87,7 +95,11 @@ class Prediction:
         self.label2prob = {}
         self.entropy = 0.0
 
-class AROW():
+
+class AROW(object):
+    """
+    An AROW classifier.
+    """
 
     def __init__(self):
         self.probabilities = False
